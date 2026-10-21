@@ -297,35 +297,54 @@ kbd.cap { font-family: inherit; font-size: .8rem; background: var(--surface2); b
 .dlg-actions { flex-wrap: wrap; }
 
 /* Shortcut orbit */
-.orbit { position: relative; height: 350px; margin-top: 28px; }
-.orbit-ring { position: absolute; left: 13%; right: 13%; top: 12%; bottom: 12%; border: 2px dashed var(--line); border-radius: 50%; transform: rotate(-6deg); }
+.orbit { position: relative; height: 350px; margin-top: 8px; --ms: 1; }
+.orbit-ring { position: absolute; border: 2px dashed var(--line); border-radius: 50%; transform: translate(-50%, -50%) rotate(-6deg); pointer-events: none; }
+.orbit-caption { margin: 28px 0 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: .95rem; }
+.orbit-caption strong { color: var(--ink); font-weight: 600; }
+.sc-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; }
+.orbit-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.orbit-btn[aria-pressed="true"]:hover { background: var(--accent); color: var(--accent-ink); }
 .orbit-planet { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
 .orbit-planet svg { width: 112px; height: 112px; animation: bob 5s ease-in-out infinite; }
 .orbit-label { font-size: .85rem; color: var(--muted); max-width: 210px; }
 .moon-pos { position: absolute; transform: translate(-50%, -50%); z-index: 1; }
 .moon {
-  display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
-  background: var(--chip-bg); color: var(--chip-ink); border: none; border-radius: 22px; padding: 9px 14px; max-width: 200px;
+  display: flex; flex-direction: column; align-items: center; gap: calc(5px * var(--ms)); text-align: center;
+  background: var(--chip-bg); color: var(--chip-ink); border: none; border-radius: calc(22px * var(--ms));
+  padding: calc(9px * var(--ms)) calc(14px * var(--ms)); max-width: calc(200px * var(--ms));
   box-shadow: inset -6px -6px 0 rgba(0, 0, 0, .06), 0 6px 14px rgba(30, 20, 80, .16);
   animation: bob 4.5s ease-in-out infinite;
 }
 .moon:hover { box-shadow: inset -6px -6px 0 rgba(0, 0, 0, .06), 0 10px 20px rgba(30, 20, 80, .24); }
 .moon.active { outline: 3px solid var(--accent); outline-offset: 3px; }
-.moon kbd.cap { background: rgba(255, 255, 255, .78); color: var(--chip-ink); border-color: rgba(36, 28, 85, .2); box-shadow: 0 2px 0 rgba(36, 28, 85, .2); }
+.moon kbd.cap { font-size: calc(.8rem * var(--ms)); padding: 1px calc(8px * var(--ms)); background: rgba(255, 255, 255, .78); color: var(--chip-ink); border-color: rgba(36, 28, 85, .2); box-shadow: 0 2px 0 rgba(36, 28, 85, .2); }
+.moon .caps { gap: calc(4px * var(--ms)); }
+.moon .plus { font-size: calc(.8rem * var(--ms)); }
 .moon .plus { color: var(--chip-ink); opacity: .6; }
 .moon .caps { justify-content: center; flex-wrap: nowrap; }
-.moon-desc { font-size: .82rem; line-height: 1.2; }
+.moon-desc { font-size: calc(.82rem * var(--ms)); line-height: 1.2; }
+.moon-pos { visibility: hidden; }
+.moon-pos.placed { visibility: visible; }
 .spark { position: absolute; display: inline-block; color: var(--star); font-size: .95rem; animation: twinkle 2.8s ease-in-out infinite; }
 @media (max-width: 640px) {
-  .orbit { height: 270px; }
-  .orbit-ring { left: 18%; right: 18%; }
   .orbit-planet svg { width: 84px; height: 84px; }
   .orbit-label { display: none; }
-  .moon { padding: 7px 10px; }
+  .moon { padding: calc(7px * var(--ms)) calc(10px * var(--ms)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .moon, .orbit-planet svg, .spark { animation: none; }
 }
+
+/* Right-click menu for sticky notes */
+.ctx-menu {
+  position: fixed; z-index: 1200; min-width: 210px; background: var(--surface); border: 2px solid var(--line);
+  border-radius: 16px; padding: 6px; box-shadow: 0 14px 34px rgba(20, 10, 60, .28); display: flex; flex-direction: column;
+}
+.ctx-menu button { display: flex; gap: 10px; align-items: center; text-align: left; background: none; border: none; padding: 8px 12px; border-radius: 10px; font-size: .95rem; color: var(--ink); }
+.ctx-menu button:hover:not(:disabled), .ctx-menu button:focus-visible { background: var(--surface2); outline: none; }
+.ctx-menu button:disabled { opacity: .4; cursor: default; }
+.ctx-menu hr { border: none; border-top: 2px dotted var(--line); margin: 4px 6px; }
+.sticky.ctx-target { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 /* Dialog */
 dialog {
@@ -460,7 +479,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     <div class="board-head">
       <div>
         <h1>My board</h1>
-        <p>Drag notes to move them. Drop one on another planet to change its category. Drag a box’s bottom corner to make it bigger.</p>
+        <p>Drag notes to move them. Drop one on another planet to change its category. Drag a box’s bottom corner to make it bigger. Right-click a note (or press and hold on a phone) to move it up or back.</p>
       </div>
       <div class="board-tools">
         <label class="sr" for="search">Search notes</label>
@@ -501,7 +520,8 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
         <button class="btn small" id="recSave" type="button" disabled>Save shortcut</button>
       </div>
     </div>
-    <div class="orbit" id="orbit" role="group" aria-label="Your most recently saved shortcuts"></div>
+    <p class="orbit-caption" id="orbitCaption"></p>
+    <div class="orbit" id="orbit" role="group" aria-label="Shortcuts in your orbit"></div>
     <p class="kb-filter" id="kbFilter" hidden></p>
     <h2 class="kb-h">My shortcuts</h2>
     <ul class="sc-list" id="myShortcuts"></ul>
@@ -835,7 +855,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   $("favFilter").addEventListener("click", e => { favOnly = !favOnly; e.currentTarget.setAttribute("aria-pressed", String(favOnly)); renderBoard(); });
 
   /* Box sizes: how big each planet box is */
-  let zoneSizes = {}, saveZoneSizes = async () => {}, resizing = null, trayOpen = false;
+  let zoneSizes = {}, saveZoneSizes = async () => {}, resizing = null, trayOpen = false, keyTidyTimer;
   function initZonePrefs(db, uid) {
     if (db) {
       const ref = db.doc("data/users/" + uid + "/prefs").collection("board").doc("zones");
@@ -886,11 +906,13 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       if (!resizing) return;
       const r = resizing; resizing = null;
       zone.classList.remove("resizing");
-      if (r.span !== r.span0 || r.h !== r.h0) {
+      const resized = r.span !== r.span0 || r.h !== r.h0;
+      if (resized) {
         zoneSizes[c.id] = { span: r.span, h: r.h };
         saveZoneSizes().catch(() => {});
       }
       pendingRender = false; render();
+      if (resized) tidyZones([c.id], true);
     };
     h.addEventListener("pointerup", end);
     h.addEventListener("pointercancel", end);
@@ -898,6 +920,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       delete zoneSizes[c.id];
       saveZoneSizes().catch(() => {});
       render();
+      tidyZones([c.id], true);
       toast(`The ${c.label} box is back to its normal size.`);
     });
     h.addEventListener("keydown", e => {
@@ -911,6 +934,8 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       zoneSizes[c.id] = cur;
       apply(cur.span, cur.h);
       saveZoneSizes().catch(() => {});
+      clearTimeout(keyTidyTimer);
+      keyTidyTimer = setTimeout(() => { render(); tidyZones([c.id], true); }, 450);
     });
     return h;
   }
@@ -999,6 +1024,13 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       el("span", { className: "sticky-text" }, n.text),
       el("span", { className: "sticky-foot" }, el("span", null, shortDate(n.createdAt)), n.fav ? el("span", { className: "fav", "aria-label": "Favorite" }, "★") : null));
     b.addEventListener("pointerdown", e => startPress(e, n, b));
+    b.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      if (readOnly) return;
+      let x = e.clientX, y = e.clientY;
+      if (!x && !y) { const r = b.getBoundingClientRect(); x = r.left + 20; y = r.top + 20; }
+      openCtx(n, b, x, y);
+    });
     b.addEventListener("click", () => {
       if (suppressClick) { suppressClick = false; return; }
       openDialog(n);
@@ -1011,12 +1043,18 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   function startPress(e, n, b) {
     if (readOnly || e.button !== 0) return;
     press = { n, b, sx: e.clientX, sy: e.clientY };
+    if (e.pointerType === "touch") {
+      press.timer = setTimeout(() => {
+        if (press && !drag && press.b === b) { const p = press; press = null; suppressClick = true; openCtx(n, b, p.sx, p.sy); }
+      }, 550);
+    }
     try { b.setPointerCapture(e.pointerId); } catch (err) {}
   }
   document.addEventListener("pointermove", e => {
     if (!press) return;
     if (!drag) {
       if (Math.hypot(e.clientX - press.sx, e.clientY - press.sy) < 6) return;
+      clearTimeout(press.timer);
       const r = press.b.getBoundingClientRect();
       drag = Object.assign({}, press, { ox: press.sx - r.left, oy: press.sy - r.top, w: press.b.offsetWidth, h: press.b.offsetHeight });
       const b = drag.b;
@@ -1036,6 +1074,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
 
   function finishDrag(e, cancelled) {
     if (!press) return;
+    clearTimeout(press.timer);
     const d = drag; press = null; drag = null;
     if (lastZone) { lastZone.classList.remove("over"); }
     const zone = lastZone; lastZone = null;
@@ -1065,12 +1104,10 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   }
 
   /* Tidy up: arrange each planet’s notes in a neat grid, favorites first */
-  $("tidyBtn").addEventListener("click", async () => {
-    if (readOnly) return;
-    if (!notes.length) { toast("Nothing to tidy yet. Add a note first!"); return; }
+  async function tidyZones(catIds, quiet) {
     const { w: nw, h: nh } = noteSize();
     const gap = 16, changed = [];
-    CATS.forEach(c => {
+    CATS.filter(c => !catIds || catIds.includes(c.id)).forEach(c => {
       const field = boardEl.querySelector(`.field[data-cat="${c.id}"]`);
       if (!field) return;
       const fw = field.clientWidth;
@@ -1095,11 +1132,75 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
         rowTop += rowH + gap + 6;
       }
     });
+    if (!changed.length) return;
     notes = notes.map(n => changed.find(c => c.id === n.id) || n);
     render();
-    try { await store.saveMany(changed); toast("All tidy! Favorites go first."); }
+    try { await store.saveMany(changed); if (!quiet) toast("All tidy! Favorites go first."); }
     catch (e) { handleSaveError(e); }
+  }
+  $("tidyBtn").addEventListener("click", () => {
+    if (readOnly) return;
+    if (!notes.length) { toast("Nothing to tidy yet. Add a note first!"); return; }
+    tidyZones(null, false);
   });
+
+  /* Right-click (or press and hold) a sticky note to move it up or back */
+  let ctxEl = null;
+  const ez = n => (typeof n.z === "number" ? n.z : n.createdAt);
+  const zoneOrder = n => notes.filter(x => catOf(x) === catOf(n) && !x.hidden).sort((a, b) => ez(a) - ez(b) || a.createdAt - b.createdAt);
+  function closeCtx() {
+    if (ctxEl) { ctxEl.remove(); ctxEl = null; }
+    document.querySelectorAll(".sticky.ctx-target").forEach(s => s.classList.remove("ctx-target"));
+  }
+  async function restack(n, how) {
+    const order = zoneOrder(n);
+    const i = order.findIndex(x => x.id === n.id);
+    if (i < 0) return;
+    const last = order.length - 1;
+    const target = how === "front" ? last : how === "back" ? 0 : how === "up" ? Math.min(last, i + 1) : Math.max(0, i - 1);
+    if (target === i) return;
+    const moved = order.slice();
+    const [me] = moved.splice(i, 1);
+    moved.splice(target, 0, me);
+    const changed = moved.map((x, k) => Object.assign({}, x, { z: k + 1 })).filter(x => ez(order.find(o => o.id === x.id)) !== x.z);
+    notes = notes.map(x => changed.find(c => c.id === x.id) || x);
+    render();
+    try { await store.saveMany(changed); } catch (e) { handleSaveError(e); }
+  }
+  function openCtx(n, b, x, y) {
+    closeCtx();
+    const order = zoneOrder(n);
+    const i = order.findIndex(o => o.id === n.id);
+    const top = i === order.length - 1, bottom = i === 0;
+    const item = (label, fn, disabled) => el("button", { type: "button", role: "menuitem", disabled: !!disabled, onclick: () => { closeCtx(); fn(); } }, label);
+    ctxEl = el("div", { className: "ctx-menu", role: "menu", "aria-label": "Note options" },
+      item("⏫ Bring to front", () => restack(n, "front"), top),
+      item("🔼 Move up one", () => restack(n, "up"), top),
+      item("🔽 Move back one", () => restack(n, "down"), bottom),
+      item("⏬ Send to back", () => restack(n, "back"), bottom),
+      el("hr"),
+      item("✏️ Edit note", () => openDialog(notes.find(x => x.id === n.id) || n)),
+      item(n.fav ? "☆ Remove favorite" : "⭐ Favorite", () => persist(Object.assign({}, n, { fav: !n.fav })).catch(() => {})),
+      item("🙈 Hide note", () => setHidden(n, true)));
+    ctxEl.addEventListener("keydown", e => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const btns = [...ctxEl.querySelectorAll("button:not(:disabled)")];
+      const k = btns.indexOf(document.activeElement);
+      btns[(k + (e.key === "ArrowDown" ? 1 : -1) + btns.length) % btns.length].focus();
+    });
+    document.body.append(ctxEl);
+    b.classList.add("ctx-target");
+    const r = ctxEl.getBoundingClientRect();
+    ctxEl.style.left = Math.max(8, Math.min(x, window.innerWidth - r.width - 8)) + "px";
+    ctxEl.style.top = Math.max(8, Math.min(y, window.innerHeight - r.height - 8)) + "px";
+    const first = ctxEl.querySelector("button:not(:disabled)");
+    if (first) first.focus({ preventScroll: true });
+  }
+  document.addEventListener("pointerdown", e => { if (ctxEl && !ctxEl.contains(e.target)) closeCtx(); }, true);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && ctxEl) closeCtx(); });
+  window.addEventListener("scroll", () => { if (ctxEl) closeCtx(); }, { passive: true });
+  window.addEventListener("resize", () => { if (ctxEl) closeCtx(); });
 
   /* ---------- Note dialog (view, edit, add) ---------- */
   const dialog = $("noteDialog");
@@ -1358,15 +1459,24 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       onmouseenter: () => preview(true), onmouseleave: () => preview(false),
       onfocus: () => preview(true), onblur: () => preview(false)
     }, capsEl(s.keys), el("span", { className: "sc-desc" }, s.desc));
-    let action = null;
+    let action = null, orbitBtn = null;
+    const text = comboText(s.keys) + ": " + s.desc;
+    const saved = s.starter ? notes.find(n => n.text === text) : s.note;
+    if (!readOnly) {
+      const inOrbit = !!(saved && saved.orbit);
+      orbitBtn = el("button", {
+        type: "button", className: "icon-btn orbit-btn", "aria-pressed": String(inOrbit),
+        title: inOrbit ? "Take it out of your orbit" : "Add it to your orbit",
+        onclick: () => (saved ? toggleOrbit(saved) : orbitStarter(s, text))
+      }, inOrbit ? "🪐 In orbit" : "🪐 Orbit");
+    }
     if (s.starter) {
-      const text = comboText(s.keys) + ": " + s.desc;
-      if (notes.some(n => n.text === text)) action = el("span", { className: "sc-saved" }, "✓ Saved");
+      if (saved) action = el("span", { className: "sc-saved" }, "✓ Saved");
       else if (!readOnly) action = el("button", { type: "button", className: "icon-btn", "aria-label": "Save to my board", onclick: () => saveStarter(s, text) }, "＋ Save");
     } else if (!readOnly) {
       action = el("button", { type: "button", className: "icon-btn", onclick: () => deleteShortcut(s.note) }, "Delete");
     }
-    return el("li", { className: "sc" + (kbActive === s.sid ? " active" : "") }, main, action);
+    return el("li", { className: "sc" + (kbActive === s.sid ? " active" : "") }, main, el("div", { className: "sc-actions" }, orbitBtn, action));
   }
 
   function renderKeysPage() {
@@ -1414,33 +1524,130 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   const SPARK_SPOTS = [[6, 18], [91, 12], [12, 86], [94, 80], [63, 5], [36, 95]];
   const MOON_COLORS = ["var(--c-butter)", "var(--c-pink)", "var(--c-mint)", "var(--c-sky)", "var(--c-peach)", "var(--c-lav)"];
 
+  const ORBIT_MAX = 30;
+  const orbitCount = () => notes.filter(n => n.orbit).length;
+  async function toggleOrbit(n) {
+    const turnOn = !n.orbit;
+    if (turnOn && orbitCount() >= ORBIT_MAX) { toast(`Your orbit is full! Take one out to add another (${ORBIT_MAX} max).`); return; }
+    try {
+      await persist(Object.assign({}, n, { orbit: turnOn, orbitAt: turnOn ? Date.now() : null }));
+      toast(turnOn ? "Added to your orbit 🪐" : "Taken out of your orbit.");
+    } catch (e) {}
+  }
+  async function orbitStarter(s, text) {
+    if (orbitCount() >= ORBIT_MAX) { toast(`Your orbit is full! Take one out to add another (${ORBIT_MAX} max).`); return; }
+    const note = Object.assign(makeNote(text, "shortcut"), { keys: s.keys.slice(), orbit: true, orbitAt: Date.now() });
+    try { await persist(note); toast("Saved and added to your orbit 🪐"); } catch (e) {}
+  }
+  async function clearOrbit() {
+    const pinned = notes.filter(n => n.orbit);
+    if (!pinned.length) return;
+    try {
+      await store.saveMany(pinned.map(n => Object.assign({}, n, { orbit: false, orbitAt: null })));
+      toast("Orbit cleared.", { label: "Undo", run: () => store.saveMany(pinned).catch(() => {}) });
+    } catch (e) { handleSaveError(e); }
+  }
+
   function renderOrbit() {
     const box = $("orbit");
+    const W = box.clientWidth;
+    if (!W) return;
     const narrow = window.innerWidth <= 640;
-    const recent = myShortcuts().sort((a, b) => (b.note.createdAt || 0) - (a.note.createdAt || 0));
-    const list = recent.slice(0, narrow ? 4 : 6);
+    const mine = myShortcuts();
+    const picked = mine.filter(s => s.note.orbit).sort((a, b) => (a.note.orbitAt || 0) - (b.note.orbitAt || 0)).slice(0, ORBIT_MAX);
+    const auto = !picked.length;
+    const list = auto ? mine.sort((a, b) => (b.note.createdAt || 0) - (a.note.createdAt || 0)).slice(0, narrow ? 4 : 6) : picked;
     const n = list.length;
-    const rx = narrow ? 32 : 37, ry = 38;
+
+    const cap = $("orbitCaption");
+    if (!loaded) cap.replaceChildren("Loading…");
+    else if (!mine.length) cap.replaceChildren("Save a shortcut and it’ll orbit the planet ✨");
+    else if (auto) cap.replaceChildren(`Showing your newest shortcuts. Tap 🪐 Orbit on any shortcut to pick your own, up to ${ORBIT_MAX}.`);
+    else {
+      cap.replaceChildren(el("strong", null, `${n} of ${ORBIT_MAX}`), " shortcuts in your orbit");
+      if (!readOnly) cap.append(el("button", { type: "button", className: "icon-btn", onclick: clearOrbit }, "Clear orbit"));
+    }
+
+    /* Moons get a little smaller as more join the orbit */
+    const ms = Math.max(0.62, n <= 6 ? 1 : 1 - (n - 6) * 0.016) * (narrow ? 0.9 : 1);
+    const showDesc = !narrow && n <= 14;
+    box.style.setProperty("--ms", ms.toFixed(3));
+    const planetSize = narrow ? 84 : 112;
     const planet = el("div", { className: "orbit-planet" });
     planet.innerHTML = PLANET_SVG;
-    planet.append(el("span", { className: "orbit-label" },
-      !loaded ? "Loading…" : n ? (recent.length === 1 ? "1 saved shortcut" : `${recent.length} saved shortcuts`) : "Save a shortcut and it’ll orbit here ✨"));
-    const moons = list.map((s, i) => {
-      const ang = (-90 + (i + 0.5) * 360 / n) * Math.PI / 180;
+    const moonEls = list.map((s, i) => {
       const on = kbActive === s.sid;
-      return el("div", { className: "moon-pos", style: `left:${50 + rx * Math.cos(ang)}%;top:${50 + ry * Math.sin(ang)}%` },
+      return el("div", { className: "moon-pos" },
         el("button", {
           type: "button", className: "moon" + (on ? " active" : ""), "aria-pressed": String(on),
-          style: `--chip-bg:${MOON_COLORS[i % MOON_COLORS.length]};animation-delay:${-i * 0.8}s`,
-          "aria-label": comboText(s.keys) + ": " + s.desc,
+          style: `--chip-bg:${MOON_COLORS[i % MOON_COLORS.length]};animation-delay:${-i * 0.7}s`,
+          "aria-label": comboText(s.keys) + ": " + s.desc, title: s.desc,
           onclick: () => { kbActive = on ? null : s.sid; hoverKeys = null; renderKeysPage(); },
           onmouseenter: () => { hoverKeys = s.keys; updateKeyboard(); },
           onmouseleave: () => { hoverKeys = null; updateKeyboard(); }
-        }, capsEl(s.keys), narrow ? null : el("span", { className: "moon-desc" }, s.desc)));
+        }, capsEl(s.keys), showDesc ? el("span", { className: "moon-desc" }, s.desc) : null));
     });
+    box.replaceChildren(planet, ...moonEls);
+
+    /* Measure the moons, then size the space and spread them over 1 to 3 orbits */
+    const pad = narrow ? 8 : 12;
+    const P = moonEls.map(m => ({ w: m.offsetWidth + pad, h: m.offsetHeight + pad, x: 0, y: 0 }));
+    const R = n <= 6 ? 1 : n <= 16 ? 2 : 3;
+    const baseH = (narrow ? [270, 400, 520] : [350, 460, 580])[R - 1];
+    const area = P.reduce((sum, p) => sum + p.w * p.h, 0);
+    const H = Math.round(Math.min(1100, Math.max(baseH, area * 2.3 / W)));
+    box.style.height = H + "px";
+    const cx = W / 2, cy = H / 2;
+    const rx0 = planetSize / 2 + (narrow ? 70 : 120), rxMax = Math.max(rx0 + 10, W / 2 - (narrow ? 45 : 95));
+    const ry0 = planetSize / 2 + 45, ryMax = Math.max(ry0 + 10, H / 2 - 35);
+    const rings = Array.from({ length: R }, (_, k) => {
+      const t = R === 1 ? 0.55 : k / (R - 1);
+      return { rx: rx0 + (rxMax - rx0) * t, ry: ry0 + (ryMax - ry0) * t };
+    });
+    const weights = rings.map(r => r.rx + r.ry), wsum = weights.reduce((a, b) => a + b, 0);
+    const counts = weights.map(w => Math.floor(n * w / wsum));
+    let extra = n - counts.reduce((a, b) => a + b, 0);
+    for (let k = R - 1; extra > 0; k = (k - 1 + R) % R) { counts[k]++; extra--; }
+    let idx = 0;
+    rings.forEach((r, k) => {
+      for (let j = 0; j < counts[k] && idx < n; j++, idx++) {
+        const h = hash(list[idx].sid);
+        const ang = (-90 + k * 31 + (j + 0.5) * 360 / counts[k] + ((h % 11) - 5)) * Math.PI / 180;
+        const wob = 1 + (((h >>> 4) % 9) - 4) / 100;
+        P[idx].x = cx + r.rx * wob * Math.cos(ang);
+        P[idx].y = cy + r.ry * wob * Math.sin(ang);
+      }
+    });
+
+    /* Nudge moons apart so none of them overlap each other or the planet */
+    const core = { x: cx, y: cy, w: planetSize + 24, h: planetSize + 24 };
+    for (let it = 0; it < 90; it++) {
+      let moved = false;
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j <= n; j++) {
+          const a = P[i], fixed = j === n, b = fixed ? core : P[j];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const ox = (a.w + b.w) / 2 - Math.abs(dx), oy = (a.h + b.h) / 2 - Math.abs(dy);
+          if (ox <= 0 || oy <= 0) continue;
+          moved = true;
+          if (ox < oy) { const s = (dx < 0 ? -1 : 1) * (ox / (fixed ? 1 : 2) + 0.5); a.x -= s; if (!fixed) b.x += s; }
+          else { const s = (dy < 0 ? -1 : 1) * (oy / (fixed ? 1 : 2) + 0.5); a.y -= s; if (!fixed) b.y += s; }
+        }
+      }
+      P.forEach(p => { p.x = clamp(p.x, p.w / 2, W - p.w / 2); p.y = clamp(p.y, p.h / 2, H - p.h / 2); });
+      if (!moved) break;
+    }
+    moonEls.forEach((m, i) => { m.style.left = P[i].x + "px"; m.style.top = P[i].y + "px"; m.classList.add("placed"); });
+
+    const ringEls = rings.map(r => el("div", { className: "orbit-ring", "aria-hidden": "true", style: `left:${cx}px;top:${cy}px;width:${2 * r.rx}px;height:${2 * r.ry}px` }));
     const sparks = SPARK_SPOTS.map(([x, y], i) => el("span", { className: "spark", "aria-hidden": "true", style: `left:${x}%;top:${y}%;animation-delay:${i * 0.5}s` }, "✦"));
-    box.replaceChildren(el("div", { className: "orbit-ring", "aria-hidden": "true" }), ...sparks, planet, ...moons);
+    box.prepend(...ringEls, ...sparks);
   }
+  let orbitTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(orbitTimer);
+    orbitTimer = setTimeout(() => { if (currentPage() === "keys") renderOrbit(); }, 150);
+  });
 
   async function saveStarter(s, text) {
     const note = Object.assign(makeNote(text, "shortcut"), { keys: s.keys.slice() });
