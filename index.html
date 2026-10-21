@@ -232,6 +232,41 @@ kbd.cap { font-family: inherit; font-size: .8rem; background: var(--surface2); b
 .sc-empty { color: var(--muted); padding: 6px 2px; grid-column: 1 / -1; }
 .kb-sub { font-size: 1.02rem; font-weight: 500; color: var(--muted); margin: 22px 0 0; }
 
+/* Reminders page */
+.page-todo { max-width: 1000px; margin: 0 auto; }
+.rem-add { margin-top: 20px; background: var(--surface); border: 2px solid var(--line); border-radius: 24px; padding: 16px; }
+.rem-add-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.rem-add-row .text-input { flex: 1 1 260px; }
+.rem-when { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.rem-when .hint { margin-right: 2px; }
+.date-input { border: 2px solid var(--line); border-radius: 999px; padding: 4px 12px; background: var(--surface2); font-size: .92rem; }
+.rem-head { display: flex; align-items: baseline; gap: 12px; margin-top: 30px; }
+.rem-head .kb-h { margin: 0; }
+.rem-head .icon-btn { margin-left: auto; }
+.rem-grid { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 22px 18px; }
+.rem {
+  position: relative; background: var(--chip-bg); color: var(--chip-ink); border-radius: 4px 4px 16px 4px;
+  padding: 20px 14px 12px; min-height: 150px; transform: rotate(var(--rot)); box-shadow: 0 6px 14px rgba(30, 20, 80, .18);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.rem .tape { position: absolute; top: -9px; left: 50%; width: 56px; height: 18px; margin-left: -28px; background: rgba(255, 255, 255, .6); border-radius: 3px; transform: rotate(calc(var(--rot) * -2)); }
+.rem-text { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; font-weight: 700; font-size: 1.28rem; line-height: 1.15; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.rem-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; }
+.check {
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--chip-ink); background: rgba(255, 255, 255, .55);
+  display: grid; place-items: center; font-weight: 700; color: var(--chip-ink); flex: none; padding: 0; font-size: .95rem;
+}
+.check:hover { background: rgba(255, 255, 255, .85); }
+.rem.is-done .check { background: var(--chip-ink); color: #fff; }
+.due { font-size: .76rem; background: rgba(255, 255, 255, .6); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.due.today { background: #241C55; color: #fff; }
+.due.late { background: #C2386A; color: #fff; }
+.rem .x { margin-left: auto; background: none; border: none; color: var(--chip-ink); opacity: .6; font-size: .85rem; border-radius: 8px; padding: 2px 6px; }
+.rem .x:hover { opacity: 1; background: rgba(255, 255, 255, .5); }
+.rem.is-done { opacity: .6; }
+.rem.is-done .rem-text { text-decoration: line-through; }
+.rem-empty { color: var(--muted); padding: 14px 2px; grid-column: 1 / -1; }
+
 /* Dialog */
 dialog {
   border: 2px solid var(--line); border-radius: 26px; padding: 22px; width: min(520px, calc(100vw - 32px));
@@ -269,12 +304,17 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   h1 { font-size: 1.9rem; }
   .mascot { width: 68px; height: 68px; }
   .brand span { display: none; }
-  .tabs { gap: 4px; }
-  .tab { padding: 8px 10px; gap: 5px; }
-  .tab .long { display: none; }
-  .tab .short { display: inline; }
   .board { --nw: 132px; --nh: 126px; grid-template-columns: 1fr; }
   .search { width: 100%; }
+}
+@media (max-width: 760px) {
+  .brand span { display: none; }
+  .tabs { gap: 2px; }
+  .tab { position: relative; flex-direction: column; gap: 0; padding: 4px 10px; font-size: .76rem; line-height: 1.25; border-radius: 14px; }
+  .tab .ti { font-size: 1.15rem; line-height: 1.2; }
+  .tab .long { display: none; }
+  .tab .short { display: inline; }
+  .tab .badge { position: absolute; top: 0; right: 2px; font-size: .65rem; min-width: 18px; padding: 0 5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .mascot .float, .twinkle { animation: none; }
@@ -298,9 +338,10 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       <span>Stardust Log</span>
     </a>
     <nav class="tabs" aria-label="Pages">
-      <a class="tab" href="#add" data-page="add">✏️ Add<span class="long"> a note</span></a>
-      <a class="tab" href="#board" data-page="board">🗂️ <span class="long">My </span>Board <span class="badge" id="navCount">0</span></a>
-      <a class="tab" href="#keys" data-page="keys">⌨️ <span class="long">Shortcuts</span><span class="short">Keys</span></a>
+      <a class="tab" href="#add" data-page="add"><span class="ti" aria-hidden="true">✏️</span><span class="tl"><span class="long">Add a note</span><span class="short">Add</span></span></a>
+      <a class="tab" href="#board" data-page="board"><span class="ti" aria-hidden="true">🗂️</span><span class="tl"><span class="long">My board</span><span class="short">Board</span></span><span class="badge" id="navCount">0</span></a>
+      <a class="tab" href="#keys" data-page="keys"><span class="ti" aria-hidden="true">⌨️</span><span class="tl"><span class="long">Shortcuts</span><span class="short">Keys</span></span></a>
+      <a class="tab" href="#todo" data-page="todo"><span class="ti" aria-hidden="true">⏰</span><span class="tl"><span class="long">Reminders</span><span class="short">To-do</span></span><span class="badge" id="remCount" hidden>0</span></a>
     </nav>
   </div>
 </header>
@@ -405,6 +446,37 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     <div class="chips" id="kbGroups" role="group" aria-label="Shortcut groups"></div>
     <div id="starterShortcuts"></div>
   </section>
+
+  <!-- REMINDERS PAGE -->
+  <section class="page-todo" id="page-todo" aria-label="Reminders" hidden>
+    <div class="board-head">
+      <div>
+        <h1>Reminders</h1>
+        <p>Quick sticky notes for things you can’t forget. Tick them off when they’re done.</p>
+      </div>
+    </div>
+    <div class="rem-add" id="remAddBox">
+      <div class="rem-add-row">
+        <label class="sr" for="remText">New reminder</label>
+        <input class="text-input" id="remText" type="text" maxlength="300" placeholder="e.g. Follow up on the printer ticket before lunch">
+        <button class="btn" id="remAddBtn" type="button" disabled>Add reminder</button>
+      </div>
+      <div class="rem-when" role="group" aria-label="When is it due?">
+        <span class="hint">Due:</span>
+        <button class="chip plain" type="button" data-when="none">No date</button>
+        <button class="chip plain" type="button" data-when="today">Today</button>
+        <button class="chip plain" type="button" data-when="tomorrow">Tomorrow</button>
+        <label class="sr" for="remDate">Pick a date</label>
+        <input class="date-input" id="remDate" type="date">
+      </div>
+    </div>
+    <div class="rem-head"><h2 class="kb-h">To do</h2><span class="count" id="remOpenCount"></span></div>
+    <ul class="rem-grid" id="remOpen"></ul>
+    <div id="remDoneWrap" hidden>
+      <div class="rem-head"><h2 class="kb-h">Done</h2><span class="count" id="remDoneCount"></span><button class="icon-btn" id="remClear" type="button">Clear done</button></div>
+      <ul class="rem-grid" id="remDone"></ul>
+    </div>
+  </section>
 </main>
 
 <dialog id="noteDialog" aria-labelledby="dlgTitle">
@@ -507,7 +579,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
         remove: id => col.doc(id).delete()
       };
       col.orderBy("createdAt", "desc").onSnapshot(snap => {
-        notes = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        notes = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(n => typeof n.text === "string");
         loaded = true; render();
       }, err => {
         loaded = true; render();
@@ -530,6 +602,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       $("status").textContent = "Notes are saved in this browser. Use Download on your board to keep a backup.";
       loaded = true; render();
     }
+    initReminders(db && uid ? db : null, uid);
     setupDownload();
   }
 
@@ -556,7 +629,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   function hideToast() { $("toast").classList.add("hidden"); }
 
   /* ---------- Pages ---------- */
-  const PAGES = ["add", "board", "keys"];
+  const PAGES = ["add", "board", "keys", "todo"];
   let page = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : "add";
   function currentPage() { return page; }
   function goTo(p) { page = PAGES.includes(p) ? p : "add"; showPage(); }
@@ -570,6 +643,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     const p = currentPage();
     $("page-add").hidden = p !== "add";
     $("page-board").hidden = p !== "board";
+    $("page-todo").hidden = p !== "todo";
     $("page-keys").hidden = p !== "keys";
     document.querySelectorAll(".tab").forEach(t => {
       if (t.dataset.page === p) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
@@ -1179,14 +1253,160 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   document.addEventListener("keyup", e => pressKey(e.code, false));
   window.addEventListener("blur", () => kbEl.querySelectorAll(".key.press").forEach(k => k.classList.remove("press")));
 
+  /* ---------- Reminders ---------- */
+  let reminders = [], remLoaded = false, remStore = null;
+  const REM_COLORS = ["var(--c-butter)", "var(--c-pink)", "var(--c-mint)", "var(--c-sky)", "var(--c-peach)", "var(--c-lav)"];
+  const pad2 = n => String(n).padStart(2, "0");
+  const ymd = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  const todayStr = () => ymd(new Date());
+  const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); return ymd(d); };
+
+  function initReminders(db, uid) {
+    if (db) {
+      const col = db.doc("data/users/" + uid + "/reminders").collection("items");
+      remStore = {
+        save: r => { const { id, ...body } = r; return col.doc(id).set(body); },
+        remove: id => col.doc(id).delete()
+      };
+      col.orderBy("createdAt", "desc").onSnapshot(snap => {
+        reminders = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        remLoaded = true; render();
+      }, () => { remLoaded = true; render(); });
+    } else {
+      const KEY = "stardust-log-reminders";
+      const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } };
+      const write = list => {
+        try { localStorage.setItem(KEY, JSON.stringify(list)); }
+        catch (e) { const err = new Error("storage"); err.code = "quota_exceeded"; throw err; }
+      };
+      const commit = list => { write(list); reminders = list.sort(byNewest); render(); };
+      reminders = read().sort(byNewest);
+      remStore = {
+        save: async r => commit(read().filter(x => x.id !== r.id).concat(r)),
+        remove: async id => commit(read().filter(x => x.id !== id))
+      };
+      remLoaded = true; render();
+    }
+  }
+  async function persistRem(r) {
+    try { await remStore.save(r); }
+    catch (e) { handleSaveError(e); throw e; }
+  }
+
+  let remDue = "";
+  const remText = $("remText");
+  function paintWhen() {
+    const t = todayStr(), tm = tomorrowStr();
+    document.querySelectorAll("[data-when]").forEach(b => {
+      const w = b.dataset.when;
+      const on = (w === "none" && !remDue) || (w === "today" && remDue === t) || (w === "tomorrow" && remDue === tm);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    $("remDate").value = remDue;
+  }
+  document.querySelectorAll("[data-when]").forEach(b => b.addEventListener("click", () => {
+    const w = b.dataset.when;
+    remDue = w === "today" ? todayStr() : w === "tomorrow" ? tomorrowStr() : "";
+    paintWhen();
+  }));
+  $("remDate").addEventListener("change", e => { remDue = e.target.value || ""; paintWhen(); });
+  remText.addEventListener("input", () => { $("remAddBtn").disabled = !remText.value.trim() || readOnly; });
+  remText.addEventListener("keydown", e => { if (e.key === "Enter") addReminder(); });
+  $("remAddBtn").addEventListener("click", addReminder);
+
+  async function addReminder() {
+    const text = remText.value.trim();
+    if (!text || !remStore || readOnly) return;
+    const now = Date.now();
+    const r = { id: newId(), text, due: remDue || null, done: false, color: reminders.length % REM_COLORS.length, createdAt: now, doneAt: null };
+    $("remAddBtn").disabled = true;
+    try {
+      await persistRem(r);
+      remText.value = ""; remDue = ""; paintWhen();
+      remText.focus();
+      toast("Reminder added ⏰");
+    } catch (e) { $("remAddBtn").disabled = false; }
+  }
+
+  function dueBadge(due) {
+    if (!due) return null;
+    const t = todayStr();
+    if (due < t) return el("span", { className: "due late" }, "Overdue");
+    if (due === t) return el("span", { className: "due today" }, "Due today");
+    if (due === tomorrowStr()) return el("span", { className: "due" }, "Tomorrow");
+    const [y, m, d] = due.split("-").map(Number);
+    return el("span", { className: "due" }, "Due " + new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+  }
+
+  function remEl(r) {
+    const rot = ((hash(r.id) % 7) - 3) * 0.8;
+    const color = REM_COLORS[(typeof r.color === "number" ? r.color : hash(r.id)) % REM_COLORS.length];
+    return el("li", { className: "rem" + (r.done ? " is-done" : ""), style: `--rot:${rot}deg;--chip-bg:${color}` },
+      el("span", { className: "tape", "aria-hidden": "true" }),
+      el("p", { className: "rem-text" }, r.text),
+      el("div", { className: "rem-foot" },
+        readOnly ? null : el("button", {
+          type: "button", className: "check", "aria-pressed": String(!!r.done),
+          "aria-label": r.done ? "Mark as not done" : "Mark as done",
+          onclick: () => toggleDone(r)
+        }, r.done ? "✓" : ""),
+        r.done ? null : dueBadge(r.due),
+        readOnly ? null : el("button", { type: "button", className: "x", "aria-label": "Delete reminder", onclick: () => deleteReminder(r) }, "Delete")));
+  }
+
+  async function toggleDone(r) {
+    const updated = Object.assign({}, r, { done: !r.done, doneAt: r.done ? null : Date.now() });
+    try {
+      await persistRem(updated);
+      if (updated.done) toast("Nice, that’s done ✓", { label: "Undo", run: () => persistRem(r).catch(() => {}) });
+    } catch (e) {}
+  }
+  async function deleteReminder(r) {
+    try {
+      await remStore.remove(r.id);
+      toast("Reminder deleted.", { label: "Undo", run: () => persistRem(r).catch(() => {}) });
+    } catch (e) { toast("That didn’t delete. Try again in a moment."); }
+  }
+  $("remClear").addEventListener("click", async () => {
+    const done = reminders.filter(r => r.done);
+    if (!done.length) return;
+    try {
+      for (const r of done) await remStore.remove(r.id);
+      toast(`Cleared ${done.length} done ${done.length === 1 ? "reminder" : "reminders"}.`, { label: "Undo", run: async () => { for (const r of done) { try { await remStore.save(r); } catch (e) {} } } });
+    } catch (e) { toast("Some reminders didn’t clear. Try again in a moment."); }
+  });
+
+  function renderReminders() {
+    $("remAddBox").hidden = readOnly;
+    $("remAddBtn").disabled = !remText.value.trim() || readOnly;
+    paintWhen();
+    const t = todayStr();
+    const open = reminders.filter(r => !r.done).sort((a, b) => {
+      const ad = a.due || "9999", bd = b.due || "9999";
+      return ad < bd ? -1 : ad > bd ? 1 : b.createdAt - a.createdAt;
+    });
+    const done = reminders.filter(r => r.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+    const late = open.filter(r => r.due && r.due < t).length;
+    $("remOpenCount").textContent = open.length ? `${open.length} left` + (late ? `, ${late} overdue` : "") : "";
+    $("remOpen").replaceChildren(...(open.length ? open.map(remEl) : [el("li", { className: "rem-empty" },
+      !remLoaded ? "Loading your reminders…" : reminders.length ? "All done! Nothing left on your list 🌙" : "Nothing to remember yet. Add your first reminder above.")]));
+    $("remDoneWrap").hidden = !done.length;
+    $("remDoneCount").textContent = done.length ? String(done.length) : "";
+    $("remDone").replaceChildren(...done.map(remEl));
+  }
+
   /* ---------- Render ---------- */
   function render() {
     $("saveBtn").disabled = !newText.value.trim() || readOnly;
     $("navCount").textContent = String(notes.length);
     $("tidyBtn").hidden = readOnly;
+    const openCount = reminders.filter(r => !r.done).length;
+    $("remCount").textContent = String(openCount);
+    $("remCount").hidden = !openCount;
     if (currentPage() === "add") { renderConstellation(); renderSpotlight(); }
     else if (currentPage() === "board") renderBoard();
-    else renderKeysPage();
+    else if (currentPage() === "keys") renderKeysPage();
+    else renderReminders();
   }
 
   renderNewCats();
