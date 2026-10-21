@@ -296,6 +296,37 @@ kbd.cap { font-family: inherit; font-size: .8rem; background: var(--surface2); b
 .mini .put:hover { background: #fff; }
 .dlg-actions { flex-wrap: wrap; }
 
+/* Shortcut orbit */
+.orbit { position: relative; height: 350px; margin-top: 28px; }
+.orbit-ring { position: absolute; left: 13%; right: 13%; top: 12%; bottom: 12%; border: 2px dashed var(--line); border-radius: 50%; transform: rotate(-6deg); }
+.orbit-planet { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.orbit-planet svg { width: 112px; height: 112px; animation: bob 5s ease-in-out infinite; }
+.orbit-label { font-size: .85rem; color: var(--muted); max-width: 210px; }
+.moon-pos { position: absolute; transform: translate(-50%, -50%); z-index: 1; }
+.moon {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
+  background: var(--chip-bg); color: var(--chip-ink); border: none; border-radius: 22px; padding: 9px 14px; max-width: 200px;
+  box-shadow: inset -6px -6px 0 rgba(0, 0, 0, .06), 0 6px 14px rgba(30, 20, 80, .16);
+  animation: bob 4.5s ease-in-out infinite;
+}
+.moon:hover { box-shadow: inset -6px -6px 0 rgba(0, 0, 0, .06), 0 10px 20px rgba(30, 20, 80, .24); }
+.moon.active { outline: 3px solid var(--accent); outline-offset: 3px; }
+.moon kbd.cap { background: rgba(255, 255, 255, .78); color: var(--chip-ink); border-color: rgba(36, 28, 85, .2); box-shadow: 0 2px 0 rgba(36, 28, 85, .2); }
+.moon .plus { color: var(--chip-ink); opacity: .6; }
+.moon .caps { justify-content: center; flex-wrap: nowrap; }
+.moon-desc { font-size: .82rem; line-height: 1.2; }
+.spark { position: absolute; display: inline-block; color: var(--star); font-size: .95rem; animation: twinkle 2.8s ease-in-out infinite; }
+@media (max-width: 640px) {
+  .orbit { height: 270px; }
+  .orbit-ring { left: 18%; right: 18%; }
+  .orbit-planet svg { width: 84px; height: 84px; }
+  .orbit-label { display: none; }
+  .moon { padding: 7px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moon, .orbit-planet svg, .spark { animation: none; }
+}
+
 /* Dialog */
 dialog {
   border: 2px solid var(--line); border-radius: 26px; padding: 22px; width: min(520px, calc(100vw - 32px));
@@ -470,6 +501,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
         <button class="btn small" id="recSave" type="button" disabled>Save shortcut</button>
       </div>
     </div>
+    <div class="orbit" id="orbit" role="group" aria-label="Your most recently saved shortcuts"></div>
     <p class="kb-filter" id="kbFilter" hidden></p>
     <h2 class="kb-h">My shortcuts</h2>
     <ul class="sc-list" id="myShortcuts"></ul>
@@ -1366,7 +1398,48 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     $("starterShortcuts").replaceChildren(...(shown.length
       ? shown.flatMap(([g, list]) => [el("h3", { className: "kb-sub" }, g), el("ul", { className: "sc-list" }, ...list.map(scRow))])
       : [el("p", { className: "sc-empty" }, "No shortcuts match. Try a different word or key.")]));
+    renderOrbit();
     updateKeyboard();
+  }
+
+  /* Your newest saved shortcuts orbit a little planet */
+  const PLANET_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+    '<ellipse cx="50" cy="56" rx="46" ry="12" fill="none" stroke="#FFC9A8" stroke-width="6" transform="rotate(-14 50 56)"/>' +
+    '<circle cx="50" cy="50" r="30" fill="#B8A9FF"/><circle cx="41" cy="38" r="5" fill="#CFC4FF"/><circle cx="62" cy="64" r="3.5" fill="#9C8BF0"/>' +
+    '<circle cx="40" cy="52" r="3.6" fill="#241C55"/><circle cx="60" cy="52" r="3.6" fill="#241C55"/>' +
+    '<circle cx="41.2" cy="50.8" r="1.1" fill="#fff"/><circle cx="61.2" cy="50.8" r="1.1" fill="#fff"/>' +
+    '<ellipse cx="34" cy="60" rx="4.5" ry="2.6" fill="#FFB8D6"/><ellipse cx="66" cy="60" rx="4.5" ry="2.6" fill="#FFB8D6"/>' +
+    '<path d="M45 60 q5 5 10 0" fill="none" stroke="#241C55" stroke-width="2.6" stroke-linecap="round"/>' +
+    '<path d="M14 66 Q50 82 86 46" fill="none" stroke="#FFC9A8" stroke-width="6" stroke-linecap="round"/></svg>';
+  const SPARK_SPOTS = [[6, 18], [91, 12], [12, 86], [94, 80], [63, 5], [36, 95]];
+  const MOON_COLORS = ["var(--c-butter)", "var(--c-pink)", "var(--c-mint)", "var(--c-sky)", "var(--c-peach)", "var(--c-lav)"];
+
+  function renderOrbit() {
+    const box = $("orbit");
+    const narrow = window.innerWidth <= 640;
+    const recent = myShortcuts().sort((a, b) => (b.note.createdAt || 0) - (a.note.createdAt || 0));
+    const list = recent.slice(0, narrow ? 4 : 6);
+    const n = list.length;
+    const rx = narrow ? 32 : 37, ry = 38;
+    const planet = el("div", { className: "orbit-planet" });
+    planet.innerHTML = PLANET_SVG;
+    planet.append(el("span", { className: "orbit-label" },
+      !loaded ? "Loading…" : n ? (recent.length === 1 ? "1 saved shortcut" : `${recent.length} saved shortcuts`) : "Save a shortcut and it’ll orbit here ✨"));
+    const moons = list.map((s, i) => {
+      const ang = (-90 + (i + 0.5) * 360 / n) * Math.PI / 180;
+      const on = kbActive === s.sid;
+      return el("div", { className: "moon-pos", style: `left:${50 + rx * Math.cos(ang)}%;top:${50 + ry * Math.sin(ang)}%` },
+        el("button", {
+          type: "button", className: "moon" + (on ? " active" : ""), "aria-pressed": String(on),
+          style: `--chip-bg:${MOON_COLORS[i % MOON_COLORS.length]};animation-delay:${-i * 0.8}s`,
+          "aria-label": comboText(s.keys) + ": " + s.desc,
+          onclick: () => { kbActive = on ? null : s.sid; hoverKeys = null; renderKeysPage(); },
+          onmouseenter: () => { hoverKeys = s.keys; updateKeyboard(); },
+          onmouseleave: () => { hoverKeys = null; updateKeyboard(); }
+        }, capsEl(s.keys), narrow ? null : el("span", { className: "moon-desc" }, s.desc)));
+    });
+    const sparks = SPARK_SPOTS.map(([x, y], i) => el("span", { className: "spark", "aria-hidden": "true", style: `left:${x}%;top:${y}%;animation-delay:${i * 0.5}s` }, "✦"));
+    box.replaceChildren(el("div", { className: "orbit-ring", "aria-hidden": "true" }), ...sparks, planet, ...moons);
   }
 
   async function saveStarter(s, text) {
