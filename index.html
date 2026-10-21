@@ -380,6 +380,8 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
         <p>Tap a shortcut to light up its keys, or tap a key to see every shortcut that uses it.</p>
       </div>
       <div class="board-tools">
+        <label class="sr" for="kbSearch">Search shortcuts</label>
+        <input class="search" id="kbSearch" type="search" placeholder="Search shortcuts">
         <button class="btn small" id="recordBtn" type="button">＋ Add a shortcut</button>
       </div>
     </div>
@@ -1016,7 +1018,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   ];
   const STARTER = STARTER_GROUPS.flatMap(g => g.items.map(s => Object.assign({ group: g.name }, s)));
 
-  let kbActive = null, kbFilterKey = null, hoverKeys = null, rec = null, kbGroup = "all";
+  let kbActive = null, kbFilterKey = null, hoverKeys = null, rec = null, kbGroup = "all", kbQuery = "";
   const kbEl = $("kb");
   KB.forEach((r, i) => kbEl.append(el("div", { className: "kb-row" + (i === 0 ? " fn" : "") },
     ...r.map(([id, label, w]) => el("button", {
@@ -1089,10 +1091,15 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       f.replaceChildren("Showing shortcuts that use ", el("kbd", { className: "cap" }, keyName(kbFilterKey)),
         el("button", { type: "button", className: "icon-btn", onclick: () => { kbFilterKey = null; renderKeysPage(); } }, "Show all"));
     } else f.hidden = true;
-    const keep = s => rec || !kbFilterKey || s.keys.includes(kbFilterKey);
+    const words = kbQuery.split(/[\s+]+/).filter(Boolean);
+    const matchesQuery = s => {
+      const hay = (s.desc + " " + comboText(s.keys) + " " + (s.group || "")).toLowerCase();
+      return words.every(w => (w.length === 1 ? s.keys.includes(w) : hay.includes(w)));
+    };
+    const keep = s => rec || ((!kbFilterKey || s.keys.includes(kbFilterKey)) && matchesQuery(s));
     const mine = myShortcuts().filter(keep), starters = starterShortcuts().filter(keep);
     $("myShortcuts").replaceChildren(...(mine.length ? mine.map(scRow) : [el("li", { className: "sc-empty" },
-      !loaded ? "Loading your shortcuts…" : kbFilterKey ? "None of your shortcuts use this key yet." : "No shortcuts yet. Add your own, or save a handy one from the list below.")]));
+      !loaded ? "Loading your shortcuts…" : (kbFilterKey || words.length) ? "None of your shortcuts match." : "No shortcuts yet. Add your own, or save a handy one from the list below.")]));
     const groupNames = STARTER_GROUPS.map(g => g.name);
     $("kbGroups").replaceChildren(...["all"].concat(groupNames).map(g => el("button", {
       type: "button", className: "chip plain", "aria-pressed": String(kbGroup === g),
@@ -1102,7 +1109,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       .map(g => [g, starters.filter(s => s.group === g)]).filter(([, list]) => list.length);
     $("starterShortcuts").replaceChildren(...(shown.length
       ? shown.flatMap(([g, list]) => [el("h3", { className: "kb-sub" }, g), el("ul", { className: "sc-list" }, ...list.map(scRow))])
-      : [el("p", { className: "sc-empty" }, "None of these use that key.")]));
+      : [el("p", { className: "sc-empty" }, "No shortcuts match. Try a different word or key.")]));
     updateKeyboard();
   }
 
@@ -1131,6 +1138,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   $("recCancel").addEventListener("click", () => { rec = null; renderKeysPage(); });
   $("recClear").addEventListener("click", () => { if (rec) { rec.keys = []; updateRecorder(); updateKeyboard(); } });
   $("recDesc").addEventListener("input", updateRecorder);
+  $("kbSearch").addEventListener("input", e => { kbQuery = e.target.value.trim().toLowerCase(); renderKeysPage(); });
   $("recDesc").addEventListener("keydown", e => { if (e.key === "Enter" && !$("recSave").disabled) $("recSave").click(); });
   $("recSave").addEventListener("click", async () => {
     const desc = $("recDesc").value.trim();
