@@ -267,6 +267,33 @@ kbd.cap { font-family: inherit; font-size: .8rem; background: var(--surface2); b
 .rem.is-done .rem-text { text-decoration: line-through; }
 .rem-empty { color: var(--muted); padding: 14px 2px; grid-column: 1 / -1; }
 
+/* Resizable boxes and hidden notes */
+.zone { position: relative; }
+.board { grid-auto-flow: row dense; }
+.zone.resizing { border-style: solid; border-color: var(--accent); }
+.zone-resize {
+  position: absolute; right: 6px; bottom: 6px; width: 28px; height: 28px; border: none; border-radius: 9px;
+  background-color: transparent; cursor: nwse-resize; touch-action: none; padding: 0;
+  background-image: linear-gradient(135deg, transparent 0 52%, var(--muted) 52% 58%, transparent 58% 68%, var(--muted) 68% 74%, transparent 74% 84%, var(--muted) 84% 90%, transparent 90%);
+  background-size: 16px 16px; background-position: center; background-repeat: no-repeat; opacity: .75;
+}
+.zone-resize:hover, .zone.resizing .zone-resize { background-color: var(--surface2); opacity: 1; }
+.hidden-tray { margin-top: 18px; background: var(--surface); border: 2px dashed var(--line); border-radius: 22px; padding: 14px 16px; }
+.tray-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tray-head h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.tray-head .hint { flex: 1; }
+.tray-list { list-style: none; padding: 4px 2px 8px; margin: 10px 0 0; display: flex; gap: 12px; overflow-x: auto; }
+.mini { flex: 0 0 170px; background: var(--chip-bg); color: var(--chip-ink); border-radius: 4px 4px 12px 4px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 10px rgba(30, 20, 80, .15); }
+.mini-text {
+  font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; font-weight: 700; font-size: 1.05rem; line-height: 1.15;
+  background: none; border: none; padding: 0; text-align: left; color: inherit; overflow: hidden; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+.mini-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; font-size: .8rem; }
+.mini .put { background: rgba(255, 255, 255, .7); border: none; border-radius: 999px; padding: 3px 10px; font-weight: 500; color: var(--chip-ink); font-size: .82rem; white-space: nowrap; flex: none; }
+.mini .put:hover { background: #fff; }
+.dlg-actions { flex-wrap: wrap; }
+
 /* Dialog */
 dialog {
   border: 2px solid var(--line); border-radius: 26px; padding: 22px; width: min(520px, calc(100vw - 32px));
@@ -400,16 +427,18 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     <div class="board-head">
       <div>
         <h1>My board</h1>
-        <p>Drag notes to move them. Drop one on another planet to change its category.</p>
+        <p>Drag notes to move them. Drop one on another planet to change its category. Drag a box’s bottom corner to make it bigger.</p>
       </div>
       <div class="board-tools">
         <label class="sr" for="search">Search notes</label>
         <input class="search" id="search" type="search" placeholder="Search notes">
         <button class="chip plain" id="favFilter" type="button" aria-pressed="false">⭐ Favorites</button>
         <button class="btn ghost small" id="tidyBtn" type="button">🧹 Tidy up</button>
+        <button class="btn ghost small" id="hiddenBtn" type="button" aria-pressed="false" hidden>🙈 Hidden <span id="hiddenCount">0</span></button>
         <button class="btn ghost small" id="downloadBtn" type="button" hidden>Download</button>
       </div>
     </div>
+    <div class="hidden-tray" id="hiddenTray" hidden></div>
     <div class="board" id="boardGrid"></div>
   </section>
 
@@ -487,6 +516,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   <label class="fav-toggle"><input type="checkbox" id="dlgFav"> ⭐ Favorite</label>
   <div class="dlg-actions">
     <button class="btn danger" id="dlgDelete" type="button">Delete</button>
+    <button class="btn ghost" id="dlgHide" type="button">🙈 Hide</button>
     <span class="spacer"></span>
     <button class="btn ghost" id="dlgCancel" type="button">Cancel</button>
     <button class="btn" id="dlgSave" type="button">Save changes</button>
@@ -603,6 +633,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       loaded = true; render();
     }
     initReminders(db && uid ? db : null, uid);
+    initZonePrefs(db && uid ? db : null, uid);
     setupDownload();
   }
 
@@ -769,25 +800,153 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   $("search").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); renderBoard(); });
   $("favFilter").addEventListener("click", e => { favOnly = !favOnly; e.currentTarget.setAttribute("aria-pressed", String(favOnly)); renderBoard(); });
 
+  /* Box sizes: how big each planet box is */
+  let zoneSizes = {}, saveZoneSizes = async () => {}, resizing = null, trayOpen = false;
+  function initZonePrefs(db, uid) {
+    if (db) {
+      const ref = db.doc("data/users/" + uid + "/prefs").collection("board").doc("zones");
+      saveZoneSizes = () => ref.set({ sizes: zoneSizes });
+      ref.onSnapshot(snap => {
+        if (resizing) return;
+        const d = snap.exists ? snap.data() : null;
+        zoneSizes = d && d.sizes ? JSON.parse(JSON.stringify(d.sizes)) : {};
+        render();
+      }, () => {});
+    } else {
+      const KEY = "stardust-log-zones";
+      try { zoneSizes = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { zoneSizes = {}; }
+      saveZoneSizes = async () => { try { localStorage.setItem(KEY, JSON.stringify(zoneSizes)); } catch (e) {} };
+    }
+  }
+  const gridCols = () => {
+    const t = getComputedStyle(boardEl).gridTemplateColumns;
+    return t && t !== "none" ? t.split(" ").length : 1;
+  };
+  const spanStyle = (span, cols) => (cols <= 1 || !span || span <= 1 ? "" : span >= cols ? "1 / -1" : "span " + span);
+
+  function resizeHandle(c, zone, field, cols) {
+    if (readOnly) return null;
+    const h = el("button", {
+      type: "button", className: "zone-resize", title: "Drag to make this box bigger or smaller. Double-click to reset.",
+      "aria-label": `Resize the ${c.label} box. Arrow keys change the size.`
+    });
+    const colW = () => parseFloat(getComputedStyle(boardEl).gridTemplateColumns.split(" ")[0]) || zone.offsetWidth;
+    const apply = (span, height) => { zone.style.gridColumn = spanStyle(span, cols); field.style.minHeight = height + "px"; };
+    h.addEventListener("pointerdown", e => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const cur = zoneSizes[c.id] || {};
+      const span0 = clamp(cur.span || Math.round((zone.offsetWidth + 18) / (colW() + 18)), 1, cols);
+      resizing = { sx: e.clientX, sy: e.clientY, h0: field.offsetHeight, span0, span: span0, h: field.offsetHeight };
+      zone.classList.add("resizing");
+      try { h.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    h.addEventListener("pointermove", e => {
+      if (!resizing) return;
+      const cw = colW() + 18;
+      resizing.span = clamp(Math.round((resizing.span0 * cw + (e.clientX - resizing.sx)) / cw), 1, cols);
+      resizing.h = Math.max(160, Math.round(resizing.h0 + (e.clientY - resizing.sy)));
+      apply(resizing.span, resizing.h);
+    });
+    const end = () => {
+      if (!resizing) return;
+      const r = resizing; resizing = null;
+      zone.classList.remove("resizing");
+      if (r.span !== r.span0 || r.h !== r.h0) {
+        zoneSizes[c.id] = { span: r.span, h: r.h };
+        saveZoneSizes().catch(() => {});
+      }
+      pendingRender = false; render();
+    };
+    h.addEventListener("pointerup", end);
+    h.addEventListener("pointercancel", end);
+    h.addEventListener("dblclick", () => {
+      delete zoneSizes[c.id];
+      saveZoneSizes().catch(() => {});
+      render();
+      toast(`The ${c.label} box is back to its normal size.`);
+    });
+    h.addEventListener("keydown", e => {
+      const cur = Object.assign({ span: 1, h: field.offsetHeight }, zoneSizes[c.id]);
+      if (e.key === "ArrowDown") cur.h += 40;
+      else if (e.key === "ArrowUp") cur.h = Math.max(160, cur.h - 40);
+      else if (e.key === "ArrowRight") cur.span = Math.min(cols, cur.span + 1);
+      else if (e.key === "ArrowLeft") cur.span = Math.max(1, cur.span - 1);
+      else return;
+      e.preventDefault();
+      zoneSizes[c.id] = cur;
+      apply(cur.span, cur.h);
+      saveZoneSizes().catch(() => {});
+    });
+    return h;
+  }
+
+  /* Hidden notes tray */
+  $("hiddenBtn").addEventListener("click", () => { trayOpen = !trayOpen; renderBoard(); });
+  async function setHidden(n, hide) {
+    const updated = Object.assign({}, n, { hidden: hide, z: Date.now() });
+    try {
+      await persist(updated);
+      toast(hide ? "Note hidden. Find it under 🙈 Hidden." : "Note is back on your board.", { label: "Undo", run: () => persist(n).catch(() => {}) });
+    } catch (e) {}
+  }
+  function renderTray() {
+    const hiddenNotes = notes.filter(n => n.hidden).sort((a, b) => (b.z || 0) - (a.z || 0));
+    if (!hiddenNotes.length) trayOpen = false;
+    $("hiddenBtn").hidden = !hiddenNotes.length;
+    $("hiddenCount").textContent = String(hiddenNotes.length);
+    $("hiddenBtn").setAttribute("aria-pressed", String(trayOpen));
+    const tray = $("hiddenTray");
+    tray.hidden = !trayOpen;
+    if (!trayOpen) { tray.replaceChildren(); return; }
+    tray.replaceChildren(
+      el("div", { className: "tray-head" },
+        el("h2", null, "🙈 Hidden notes"),
+        el("span", { className: "hint" }, "Tucked away, not deleted. Put them back whenever you like."),
+        readOnly ? null : el("button", { type: "button", className: "icon-btn", onclick: async () => {
+          try {
+            await store.saveMany(hiddenNotes.map(n => Object.assign({}, n, { hidden: false, z: Date.now() })));
+            toast("All notes are back on your board.");
+          } catch (e) { handleSaveError(e); }
+        } }, "Put all back"),
+        el("button", { type: "button", className: "icon-btn", onclick: () => { trayOpen = false; renderBoard(); } }, "Close")),
+      el("ul", { className: "tray-list" }, ...hiddenNotes.map(n => {
+        const c = catById(catOf(n));
+        return el("li", { className: "mini", style: `--chip-bg:${c.color}` },
+          el("button", { type: "button", className: "mini-text", onclick: () => openDialog(n) }, n.text),
+          el("div", { className: "mini-foot" },
+            el("span", null, c.emoji + " " + c.label),
+            readOnly ? null : el("button", { type: "button", className: "put", onclick: () => setHidden(n, false) }, "Put back")));
+      })));
+  }
+
   let pendingRender = false;
   function renderBoard() {
-    if (drag) { pendingRender = true; return; }
+    if (drag || resizing) { pendingRender = true; return; }
     const { h: nh } = noteSize();
+    const cols = gridCols();
+    const base = window.innerWidth <= 560 ? 190 : 300;
     boardEl.replaceChildren(...CATS.map(c => {
-      const list = notes.filter(n => catOf(n) === c.id).sort((a, b) => (a.z || a.createdAt) - (b.z || b.createdAt));
+      const list = notes.filter(n => catOf(n) === c.id && !n.hidden).sort((a, b) => (a.z || a.createdAt) - (b.z || b.createdAt));
+      const size = zoneSizes[c.id] || {};
       const field = el("div", { className: "field", "data-cat": c.id });
       const bottom = list.reduce((m, n) => Math.max(m, posOf(n).y + nh), 0);
-      field.style.minHeight = Math.max(window.innerWidth <= 560 ? 190 : 300, bottom + 60) + "px";
+      field.style.minHeight = Math.max(size.h || base, bottom + 60) + "px";
       if (!list.length) field.append(el("p", { className: "field-empty" }, "Drag a note here, or add one with the + button."));
       list.forEach(n => field.append(stickyEl(n, c)));
-      return el("section", { className: "zone", "data-cat": c.id, style: `--chip-bg:${c.color}`, "aria-label": c.label },
+      const span = spanStyle(size.span, cols);
+      const zone = el("section", { className: "zone", "data-cat": c.id, style: `--chip-bg:${c.color}` + (span ? `;grid-column:${span}` : ""), "aria-label": c.label },
         el("header", { className: "zone-head" },
           el("span", { className: "zone-planet", "aria-hidden": "true" }, c.emoji),
           el("h3", null, c.label),
           el("span", { className: "count" }, String(list.length)),
           readOnly ? null : el("button", { className: "icon-btn add", type: "button", "aria-label": "Add a note to " + c.label, onclick: () => openDialog(null, c.id) }, "+ Add")),
         field);
+      const handle = resizeHandle(c, zone, field, cols);
+      if (handle) zone.append(handle);
+      return zone;
     }));
+    renderTray();
   }
 
   function stickyEl(n, c) {
@@ -879,7 +1038,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       const cols = Math.max(1, Math.floor((fw - gap) / (nw + gap)));
       const gridW = cols * nw + (cols - 1) * gap;
       const startX = Math.max(0, (fw - gridW) / 2);
-      notes.filter(n => catOf(n) === c.id)
+      notes.filter(n => catOf(n) === c.id && !n.hidden)
         .sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.createdAt - b.createdAt)
         .forEach((n, i) => {
           const left = startX + (i % cols) * (nw + gap);
@@ -907,6 +1066,8 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     $("dlgFav").checked = n ? !!n.fav : false;
     $("dlgFav").disabled = readOnly;
     $("dlgDelete").hidden = !n || readOnly;
+    $("dlgHide").hidden = !n || readOnly;
+    $("dlgHide").textContent = n && n.hidden ? "↩️ Put back" : "🙈 Hide";
     $("dlgSave").hidden = readOnly;
     $("dlgSave").textContent = n ? "Save changes" : "Save note";
     paintDlgCats();
@@ -942,6 +1103,13 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       if (spotId === n.id) spotId = null;
       toast("Note deleted.", { label: "Undo", run: () => persist(n).catch(() => {}) });
     } catch (e) { toast("That didn’t delete. Try again in a moment."); }
+  });
+
+  $("dlgHide").addEventListener("click", () => {
+    const n = notes.find(x => x.id === dlg.id);
+    if (!n) return;
+    closeDialog();
+    setHidden(n, !n.hidden);
   });
 
   /* ---------- Download ---------- */
