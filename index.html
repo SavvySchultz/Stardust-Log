@@ -192,6 +192,46 @@ textarea::placeholder, input::placeholder { color: var(--muted); opacity: .9; }
   transform: rotate(0deg) scale(1.06); box-shadow: 0 18px 36px rgba(30, 20, 80, .32);
 }
 
+/* Shortcut keyboard page */
+.tab .short { display: none; }
+.page-keys { max-width: 1000px; margin: 0 auto; }
+.kb-wrap { margin-top: 22px; overflow-x: auto; padding: 4px 2px 14px; }
+.kb {
+  min-width: 660px; background: var(--surface); border: 2px solid var(--line); border-radius: 26px;
+  padding: 14px; display: flex; flex-direction: column; gap: 7px; box-shadow: 0 9px 0 var(--line);
+}
+.kb-row { display: flex; gap: 7px; }
+.key {
+  position: relative; flex: var(--w) 1 0; min-width: 0; height: 44px; border: none; border-radius: 10px;
+  background: var(--surface2); color: var(--ink); box-shadow: 0 4px 0 var(--line);
+  font-size: .8rem; font-weight: 500; display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; white-space: nowrap; overflow: hidden;
+  transition: transform .08s, box-shadow .08s, background-color .15s;
+}
+.kb-row.fn .key { height: 34px; font-size: .72rem; }
+.key.has::after { content: ""; position: absolute; top: 5px; right: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.key.lit, .key.press { background: var(--c-butter); color: var(--chip-ink); transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.key.picked { background: var(--accent); color: var(--accent-ink); transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.key.filter { outline: 3px solid var(--accent); outline-offset: 1px; }
+.recorder { margin-top: 16px; background: var(--surface); border: 2px dashed var(--accent); border-radius: 22px; padding: 16px; }
+.rec-lead { margin: 0 0 8px; font-weight: 500; }
+.combo { min-height: 34px; display: flex; align-items: center; margin-bottom: 10px; }
+.text-input { width: 100%; border: 2px solid var(--line); border-radius: 14px; padding: 10px 14px; background: var(--surface2); }
+.kb-filter { margin: 16px 0 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); }
+.kb-h { font-size: 1.2rem; font-weight: 600; margin: 28px 0 0; }
+.sc-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.sc { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 10px 10px 10px 12px; }
+.sc.active { border-color: var(--accent); }
+.sc-main { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; background: none; border: none; padding: 2px 0; text-align: left; min-width: 0; }
+.caps { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+kbd.cap { font-family: inherit; font-size: .8rem; background: var(--surface2); border: 1px solid var(--line); border-radius: 7px; padding: 1px 8px; box-shadow: 0 2px 0 var(--line); white-space: nowrap; }
+.plus { color: var(--muted); font-size: .8rem; }
+.sc-desc { flex: 1; font-size: .95rem; line-height: 1.3; }
+.sc .icon-btn { white-space: nowrap; flex: none; }
+.sc-saved { color: var(--muted); font-size: .88rem; white-space: nowrap; padding: 0 8px; }
+.sc-empty { color: var(--muted); padding: 6px 2px; grid-column: 1 / -1; }
+.kb-sub { font-size: 1.02rem; font-weight: 500; color: var(--muted); margin: 22px 0 0; }
+
 /* Dialog */
 dialog {
   border: 2px solid var(--line); border-radius: 26px; padding: 22px; width: min(520px, calc(100vw - 32px));
@@ -229,8 +269,10 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   h1 { font-size: 1.9rem; }
   .mascot { width: 68px; height: 68px; }
   .brand span { display: none; }
-  .tab { padding: 8px 12px; }
+  .tabs { gap: 4px; }
+  .tab { padding: 8px 10px; gap: 5px; }
   .tab .long { display: none; }
+  .tab .short { display: inline; }
   .board { --nw: 132px; --nh: 126px; grid-template-columns: 1fr; }
   .search { width: 100%; }
 }
@@ -258,6 +300,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     <nav class="tabs" aria-label="Pages">
       <a class="tab" href="#add" data-page="add">✏️ Add<span class="long"> a note</span></a>
       <a class="tab" href="#board" data-page="board">🗂️ <span class="long">My </span>Board <span class="badge" id="navCount">0</span></a>
+      <a class="tab" href="#keys" data-page="keys">⌨️ <span class="long">Shortcuts</span><span class="short">Keys</span></a>
     </nav>
   </div>
 </header>
@@ -327,6 +370,38 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       </div>
     </div>
     <div class="board" id="boardGrid"></div>
+  </section>
+
+  <!-- SHORTCUTS PAGE -->
+  <section class="page-keys" id="page-keys" aria-label="Keyboard shortcuts" hidden>
+    <div class="board-head">
+      <div>
+        <h1>Shortcut keyboard</h1>
+        <p>Tap a shortcut to light up its keys, or tap a key to see every shortcut that uses it.</p>
+      </div>
+      <div class="board-tools">
+        <button class="btn small" id="recordBtn" type="button">＋ Add a shortcut</button>
+      </div>
+    </div>
+    <div class="kb-wrap"><div class="kb" id="kb" role="group" aria-label="Keyboard"></div></div>
+    <div class="recorder" id="recorder" hidden>
+      <p class="rec-lead">Tap keys on the keyboard to build your shortcut.</p>
+      <div class="combo" id="recCombo"></div>
+      <label class="sr" for="recDesc">What does it do?</label>
+      <input class="text-input" id="recDesc" type="text" maxlength="200" placeholder="What does it do? e.g. Opens clipboard history">
+      <div class="dlg-actions">
+        <button class="btn ghost small" id="recClear" type="button">Clear keys</button>
+        <span class="spacer"></span>
+        <button class="btn ghost small" id="recCancel" type="button">Cancel</button>
+        <button class="btn small" id="recSave" type="button" disabled>Save shortcut</button>
+      </div>
+    </div>
+    <p class="kb-filter" id="kbFilter" hidden></p>
+    <h2 class="kb-h">My shortcuts</h2>
+    <ul class="sc-list" id="myShortcuts"></ul>
+    <h2 class="kb-h">Handy Windows shortcuts</h2>
+    <div class="chips" id="kbGroups" role="group" aria-label="Shortcut groups"></div>
+    <div id="starterShortcuts"></div>
   </section>
 </main>
 
@@ -479,9 +554,10 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
   function hideToast() { $("toast").classList.add("hidden"); }
 
   /* ---------- Pages ---------- */
-  let page = location.hash === "#board" ? "board" : "add";
+  const PAGES = ["add", "board", "keys"];
+  let page = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : "add";
   function currentPage() { return page; }
-  function goTo(p) { page = p === "board" ? "board" : "add"; showPage(); }
+  function goTo(p) { page = PAGES.includes(p) ? p : "add"; showPage(); }
   document.addEventListener("click", e => {
     const link = e.target.closest("a[data-page]");
     if (!link) return;
@@ -492,6 +568,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     const p = currentPage();
     $("page-add").hidden = p !== "add";
     $("page-board").hidden = p !== "board";
+    $("page-keys").hidden = p !== "keys";
     document.querySelectorAll(".tab").forEach(t => {
       if (t.dataset.page === p) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
     });
@@ -499,7 +576,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     render();
   }
   window.addEventListener("hashchange", () => {
-    if (location.hash === "#board" || location.hash === "#add") goTo(location.hash.slice(1));
+    if (PAGES.includes(location.hash.slice(1))) goTo(location.hash.slice(1));
   });
 
   /* ---------- Category chips ---------- */
@@ -821,13 +898,287 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     });
   }
 
+  /* ---------- Shortcut keyboard ---------- */
+  const keyRow = s => s.split("").map(c => [c, c.toUpperCase()]);
+  const KB = [
+    [["esc", "Esc"], ["f1", "F1"], ["f2", "F2"], ["f3", "F3"], ["f4", "F4"], ["f5", "F5"], ["f6", "F6"], ["f7", "F7"], ["f8", "F8"], ["f9", "F9"], ["f10", "F10"], ["f11", "F11"], ["f12", "F12"], ["prtsc", "PrtSc"], ["del", "Del"]],
+    [["`", "`"]].concat(keyRow("1234567890"), [["-", "-"], ["=", "="], ["backspace", "Backspace", 2]]),
+    [["tab", "Tab", 1.5]].concat(keyRow("qwertyuiop"), [["[", "["], ["]", "]"], ["\\", "\\", 1.5]]),
+    [["caps", "Caps", 1.75]].concat(keyRow("asdfghjkl"), [[";", ";"], ["'", "'"], ["enter", "Enter", 2.25]]),
+    [["shift", "Shift", 2.25]].concat(keyRow("zxcvbnm"), [[",", ","], [".", "."], ["/", "/"], ["shift", "Shift", 2.75]]),
+    [["ctrl", "Ctrl", 1.25], ["win", "Win", 1.25], ["alt", "Alt", 1.25], ["space", "", 4.75], ["alt", "Alt", 1.25], ["ctrl", "Ctrl", 1.25], ["left", "←"], ["up", "↑"], ["down", "↓"], ["right", "→"]]
+  ];
+  const KEY_NAMES = { space: "Space" };
+  KB.flat().forEach(([id, label]) => { if (!(id in KEY_NAMES)) KEY_NAMES[id] = label; });
+  const keyName = id => KEY_NAMES[id] || id;
+  const MODS = ["win", "ctrl", "alt", "shift"];
+  const sortCombo = keys => MODS.filter(m => keys.includes(m)).concat(keys.filter(k => !MODS.includes(k)));
+  const comboText = keys => keys.map(keyName).join(" + ");
+  const STARTER_GROUPS = [
+    { name: "🛟 Help desk lifesavers", items: [
+      { keys: ["ctrl", "shift", "esc"], desc: "Open Task Manager straight away" },
+      { keys: ["ctrl", "alt", "del"], desc: "Open the security screen to lock, sign out or reach Task Manager" },
+      { keys: ["win", "ctrl", "shift", "b"], desc: "Restart the graphics driver when the screen freezes or goes black" },
+      { keys: ["win", "r"], desc: "Open the Run box" },
+      { keys: ["ctrl", "shift", "enter"], desc: "In the Run box, run the command as administrator" },
+      { keys: ["win", "x"], desc: "Open the quick link menu with Device Manager, Terminal and more" },
+      { keys: ["win", "l"], desc: "Lock the computer when you step away" },
+      { keys: ["win", "shift", "s"], desc: "Screenshot part of the screen" },
+      { keys: ["win", "prtsc"], desc: "Save a full screenshot to your Pictures › Screenshots folder" }
+    ] },
+    { name: "🧭 Getting around Windows", items: [
+      { keys: ["win"], desc: "Open the Start menu" },
+      { keys: ["win", "s"], desc: "Open search" },
+      { keys: ["win", "e"], desc: "Open File Explorer" },
+      { keys: ["win", "i"], desc: "Open Settings" },
+      { keys: ["win", "a"], desc: "Open quick settings for Wi-Fi, Bluetooth and volume" },
+      { keys: ["win", "n"], desc: "Open notifications and the calendar" },
+      { keys: ["win", "v"], desc: "Open clipboard history" },
+      { keys: ["win", "."], desc: "Open the emoji picker" },
+      { keys: ["win", "h"], desc: "Start voice typing" },
+      { keys: ["win", "b"], desc: "Jump to the icons in the system tray" },
+      { keys: ["win", "1"], desc: "Open the first app pinned to the taskbar (2 opens the second, and so on)" },
+      { keys: ["win", "t"], desc: "Cycle through apps on the taskbar" },
+      { keys: ["win", "d"], desc: "Show or hide the desktop" },
+      { keys: ["win", "m"], desc: "Minimize all windows" },
+      { keys: ["win", "shift", "m"], desc: "Bring back all minimized windows" },
+      { keys: ["alt", "tab"], desc: "Switch between open apps" },
+      { keys: ["win", "tab"], desc: "Open Task View to see every open window" },
+      { keys: ["alt", "f4"], desc: "Close the current app" }
+    ] },
+    { name: "🪟 Windows and screens", items: [
+      { keys: ["win", "left"], desc: "Snap a window to the left half of the screen" },
+      { keys: ["win", "right"], desc: "Snap a window to the right half of the screen" },
+      { keys: ["win", "up"], desc: "Maximize the window" },
+      { keys: ["win", "down"], desc: "Shrink or minimize the window" },
+      { keys: ["win", "z"], desc: "Open snap layouts to arrange windows (Windows 11)" },
+      { keys: ["win", "shift", "left"], desc: "Move a window to the monitor on the left" },
+      { keys: ["win", "shift", "right"], desc: "Move a window to the monitor on the right" },
+      { keys: ["win", "p"], desc: "Choose how to use a projector or second screen" },
+      { keys: ["win", "k"], desc: "Cast to a wireless display" },
+      { keys: ["win", "ctrl", "d"], desc: "Add a new virtual desktop" },
+      { keys: ["win", "ctrl", "left"], desc: "Switch to the virtual desktop on the left" },
+      { keys: ["win", "ctrl", "right"], desc: "Switch to the virtual desktop on the right" },
+      { keys: ["win", "ctrl", "f4"], desc: "Close the current virtual desktop" }
+    ] },
+    { name: "👓 Accessibility", items: [
+      { keys: ["win", "="], desc: "Turn on Magnifier and zoom in" },
+      { keys: ["win", "-"], desc: "Zoom out with Magnifier" },
+      { keys: ["win", "esc"], desc: "Turn off Magnifier" },
+      { keys: ["win", "ctrl", "enter"], desc: "Turn Narrator (the screen reader) on or off" },
+      { keys: ["win", "ctrl", "o"], desc: "Open the on-screen keyboard" },
+      { keys: ["win", "u"], desc: "Open accessibility settings" }
+    ] },
+    { name: "📁 File Explorer", items: [
+      { keys: ["f2"], desc: "Rename the selected file" },
+      { keys: ["ctrl", "shift", "n"], desc: "Make a new folder (in File Explorer)" },
+      { keys: ["alt", "enter"], desc: "Open the properties of the selected file or folder" },
+      { keys: ["alt", "up"], desc: "Go up one folder" },
+      { keys: ["alt", "left"], desc: "Go back to the last folder" },
+      { keys: ["alt", "d"], desc: "Jump to the address bar to type a path" },
+      { keys: ["ctrl", "e"], desc: "Jump to the search box" },
+      { keys: ["shift", "del"], desc: "Delete for good, skipping the Recycle Bin (careful!)" },
+      { keys: ["f5"], desc: "Refresh the page or folder" }
+    ] },
+    { name: "🌐 Web browsers", items: [
+      { keys: ["ctrl", "t"], desc: "Open a new tab" },
+      { keys: ["ctrl", "w"], desc: "Close the current tab" },
+      { keys: ["ctrl", "shift", "t"], desc: "Reopen the last browser tab you closed" },
+      { keys: ["ctrl", "tab"], desc: "Go to the next tab" },
+      { keys: ["ctrl", "shift", "tab"], desc: "Go to the previous tab" },
+      { keys: ["ctrl", "l"], desc: "Jump to the address bar" },
+      { keys: ["ctrl", "shift", "n"], desc: "Open a private window (Chrome and Edge)" },
+      { keys: ["ctrl", "shift", "del"], desc: "Clear browsing data like cache and cookies" },
+      { keys: ["ctrl", "f5"], desc: "Hard refresh, reloading the page without the cache" },
+      { keys: ["f12"], desc: "Open developer tools" },
+      { keys: ["ctrl", "h"], desc: "Open history" },
+      { keys: ["ctrl", "j"], desc: "Open downloads" },
+      { keys: ["ctrl", "d"], desc: "Bookmark the page" },
+      { keys: ["ctrl", "="], desc: "Zoom in" },
+      { keys: ["ctrl", "-"], desc: "Zoom out" },
+      { keys: ["ctrl", "0"], desc: "Reset the zoom to 100%" }
+    ] },
+    { name: "✍️ Typing and editing", items: [
+      { keys: ["ctrl", "c"], desc: "Copy" },
+      { keys: ["ctrl", "x"], desc: "Cut" },
+      { keys: ["ctrl", "v"], desc: "Paste" },
+      { keys: ["ctrl", "shift", "v"], desc: "Paste without formatting (in many apps)" },
+      { keys: ["ctrl", "z"], desc: "Undo the last thing you did" },
+      { keys: ["ctrl", "y"], desc: "Redo" },
+      { keys: ["ctrl", "a"], desc: "Select everything" },
+      { keys: ["ctrl", "f"], desc: "Find words on the page or in a document" },
+      { keys: ["ctrl", "s"], desc: "Save" },
+      { keys: ["ctrl", "p"], desc: "Print" },
+      { keys: ["ctrl", "backspace"], desc: "Delete the whole word before the cursor" },
+      { keys: ["ctrl", "left"], desc: "Move the cursor back one word" },
+      { keys: ["ctrl", "right"], desc: "Move the cursor forward one word" }
+    ] }
+  ];
+  const STARTER = STARTER_GROUPS.flatMap(g => g.items.map(s => Object.assign({ group: g.name }, s)));
+
+  let kbActive = null, kbFilterKey = null, hoverKeys = null, rec = null, kbGroup = "all";
+  const kbEl = $("kb");
+  KB.forEach((r, i) => kbEl.append(el("div", { className: "kb-row" + (i === 0 ? " fn" : "") },
+    ...r.map(([id, label, w]) => el("button", {
+      type: "button", className: "key", "data-key": id, style: `--w:${w || 1}`,
+      "aria-label": keyName(id), onclick: () => onKeyClick(id)
+    }, label)))));
+
+  const myShortcuts = () => notes.filter(n => Array.isArray(n.keys) && n.keys.length).map(n => {
+    const prefix = comboText(n.keys) + ":";
+    return { sid: n.id, keys: n.keys, desc: n.text.startsWith(prefix) ? n.text.slice(prefix.length).trim() : n.text, note: n };
+  });
+  const starterShortcuts = () => STARTER.map((s, i) => ({ sid: "s" + i, keys: s.keys, desc: s.desc, group: s.group, starter: true }));
+  const allShortcuts = () => myShortcuts().concat(starterShortcuts());
+  const capsEl = keys => el("span", { className: "caps" }, ...keys.flatMap((k, i) => {
+    const cap = el("kbd", { className: "cap" }, keyName(k));
+    return i ? [el("span", { className: "plus", "aria-hidden": "true" }, "+"), cap] : [cap];
+  }));
+
+  function updateKeyboard() {
+    const all = allShortcuts();
+    const active = all.find(s => s.sid === kbActive);
+    const lit = new Set(hoverKeys || (active ? active.keys : []));
+    const used = new Set(all.flatMap(s => s.keys));
+    kbEl.querySelectorAll(".key").forEach(k => {
+      const id = k.dataset.key;
+      k.classList.toggle("lit", lit.has(id) && !rec);
+      k.classList.toggle("picked", !!rec && rec.keys.includes(id));
+      k.classList.toggle("filter", kbFilterKey === id && !rec);
+      k.classList.toggle("has", used.has(id));
+    });
+  }
+
+  function onKeyClick(id) {
+    if (rec) {
+      rec.keys = rec.keys.includes(id) ? rec.keys.filter(k => k !== id) : sortCombo(rec.keys.concat(id));
+      updateRecorder(); updateKeyboard();
+      return;
+    }
+    kbFilterKey = kbFilterKey === id ? null : id;
+    kbActive = null; hoverKeys = null;
+    renderKeysPage();
+  }
+
+  function scRow(s) {
+    const preview = on => { hoverKeys = on ? s.keys : null; updateKeyboard(); };
+    const main = el("button", {
+      type: "button", className: "sc-main", "aria-pressed": String(kbActive === s.sid),
+      onclick: () => { kbActive = kbActive === s.sid ? null : s.sid; hoverKeys = null; renderKeysPage(); },
+      onmouseenter: () => preview(true), onmouseleave: () => preview(false),
+      onfocus: () => preview(true), onblur: () => preview(false)
+    }, capsEl(s.keys), el("span", { className: "sc-desc" }, s.desc));
+    let action = null;
+    if (s.starter) {
+      const text = comboText(s.keys) + ": " + s.desc;
+      if (notes.some(n => n.text === text)) action = el("span", { className: "sc-saved" }, "✓ Saved");
+      else if (!readOnly) action = el("button", { type: "button", className: "icon-btn", "aria-label": "Save to my board", onclick: () => saveStarter(s, text) }, "＋ Save");
+    } else if (!readOnly) {
+      action = el("button", { type: "button", className: "icon-btn", onclick: () => deleteShortcut(s.note) }, "Delete");
+    }
+    return el("li", { className: "sc" + (kbActive === s.sid ? " active" : "") }, main, action);
+  }
+
+  function renderKeysPage() {
+    $("recordBtn").hidden = readOnly || !!rec;
+    $("recorder").hidden = !rec;
+    if (rec) updateRecorder();
+    const f = $("kbFilter");
+    if (kbFilterKey && !rec) {
+      f.hidden = false;
+      f.replaceChildren("Showing shortcuts that use ", el("kbd", { className: "cap" }, keyName(kbFilterKey)),
+        el("button", { type: "button", className: "icon-btn", onclick: () => { kbFilterKey = null; renderKeysPage(); } }, "Show all"));
+    } else f.hidden = true;
+    const keep = s => rec || !kbFilterKey || s.keys.includes(kbFilterKey);
+    const mine = myShortcuts().filter(keep), starters = starterShortcuts().filter(keep);
+    $("myShortcuts").replaceChildren(...(mine.length ? mine.map(scRow) : [el("li", { className: "sc-empty" },
+      !loaded ? "Loading your shortcuts…" : kbFilterKey ? "None of your shortcuts use this key yet." : "No shortcuts yet. Add your own, or save a handy one from the list below.")]));
+    const groupNames = STARTER_GROUPS.map(g => g.name);
+    $("kbGroups").replaceChildren(...["all"].concat(groupNames).map(g => el("button", {
+      type: "button", className: "chip plain", "aria-pressed": String(kbGroup === g),
+      onclick: () => { kbGroup = g; renderKeysPage(); }
+    }, g === "all" ? `All ${STARTER.length}` : g)));
+    const shown = groupNames.filter(g => kbGroup === "all" || kbGroup === g)
+      .map(g => [g, starters.filter(s => s.group === g)]).filter(([, list]) => list.length);
+    $("starterShortcuts").replaceChildren(...(shown.length
+      ? shown.flatMap(([g, list]) => [el("h3", { className: "kb-sub" }, g), el("ul", { className: "sc-list" }, ...list.map(scRow))])
+      : [el("p", { className: "sc-empty" }, "None of these use that key.")]));
+    updateKeyboard();
+  }
+
+  async function saveStarter(s, text) {
+    const note = Object.assign(makeNote(text, "shortcut"), { keys: s.keys.slice() });
+    try { await persist(note); toast("Saved to your Shortcuts planet ⌨️"); } catch (e) {}
+  }
+  async function deleteShortcut(n) {
+    try {
+      await store.remove(n.id);
+      if (kbActive === n.id) kbActive = null;
+      toast("Shortcut deleted.", { label: "Undo", run: () => persist(n).catch(() => {}) });
+    } catch (e) { toast("That didn’t delete. Try again in a moment."); }
+  }
+
+  function updateRecorder() {
+    if (!rec) return;
+    $("recCombo").replaceChildren(rec.keys.length ? capsEl(rec.keys) : el("span", { className: "hint" }, "No keys picked yet"));
+    $("recSave").disabled = !rec.keys.length || !$("recDesc").value.trim();
+  }
+  $("recordBtn").addEventListener("click", () => {
+    rec = { keys: [] }; kbFilterKey = null; kbActive = null; hoverKeys = null;
+    $("recDesc").value = "";
+    renderKeysPage();
+  });
+  $("recCancel").addEventListener("click", () => { rec = null; renderKeysPage(); });
+  $("recClear").addEventListener("click", () => { if (rec) { rec.keys = []; updateRecorder(); updateKeyboard(); } });
+  $("recDesc").addEventListener("input", updateRecorder);
+  $("recDesc").addEventListener("keydown", e => { if (e.key === "Enter" && !$("recSave").disabled) $("recSave").click(); });
+  $("recSave").addEventListener("click", async () => {
+    const desc = $("recDesc").value.trim();
+    if (!rec || !rec.keys.length || !desc) return;
+    const keys = rec.keys.slice();
+    const note = Object.assign(makeNote(comboText(keys) + ": " + desc, "shortcut"), { keys });
+    try {
+      await persist(note);
+      rec = null; kbActive = note.id;
+      renderKeysPage();
+      toast("Shortcut saved ⌨️ It’s on your board too.");
+    } catch (e) {}
+  });
+
+  /* Pressing real keys lights up the matching keys */
+  const CODE_MAP = { ControlLeft: "ctrl", ControlRight: "ctrl", ShiftLeft: "shift", ShiftRight: "shift", AltLeft: "alt", AltRight: "alt",
+    MetaLeft: "win", MetaRight: "win", OSLeft: "win", OSRight: "win", Escape: "esc", Space: "space", Enter: "enter", NumpadEnter: "enter",
+    Backspace: "backspace", Tab: "tab", CapsLock: "caps", ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down",
+    Delete: "del", PrintScreen: "prtsc", Backquote: "`", Minus: "-", Equal: "=", BracketLeft: "[", BracketRight: "]",
+    Backslash: "\\", Semicolon: ";", Quote: "'", Comma: ",", Period: ".", Slash: "/" };
+  const codeToKey = code => {
+    if (CODE_MAP[code]) return CODE_MAP[code];
+    let m = code.match(/^Key([A-Z])$/); if (m) return m[1].toLowerCase();
+    m = code.match(/^Digit(\d)$/); if (m) return m[1];
+    return /^F([1-9]|1[0-2])$/.test(code) ? code.toLowerCase() : null;
+  };
+  const pressKey = (code, on) => {
+    const id = codeToKey(code);
+    if (!id) return;
+    kbEl.querySelectorAll(".key").forEach(k => { if (k.dataset.key === id) k.classList.toggle("press", on); });
+  };
+  document.addEventListener("keydown", e => {
+    if (currentPage() !== "keys") return;
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+    pressKey(e.code, true);
+  });
+  document.addEventListener("keyup", e => pressKey(e.code, false));
+  window.addEventListener("blur", () => kbEl.querySelectorAll(".key.press").forEach(k => k.classList.remove("press")));
+
   /* ---------- Render ---------- */
   function render() {
     $("saveBtn").disabled = !newText.value.trim() || readOnly;
     $("navCount").textContent = String(notes.length);
     $("tidyBtn").hidden = readOnly;
     if (currentPage() === "add") { renderConstellation(); renderSpotlight(); }
-    else renderBoard();
+    else if (currentPage() === "board") renderBoard();
+    else renderKeysPage();
   }
 
   renderNewCats();
