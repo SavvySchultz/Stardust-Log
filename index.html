@@ -168,7 +168,7 @@ textarea::placeholder, input::placeholder { color: var(--muted); opacity: .9; }
 .field-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--muted); font-size: .95rem; text-align: center; padding: 20px; pointer-events: none; }
 
 .sticky {
-  position: absolute; left: calc((100% - var(--nw)) * var(--x)); width: var(--nw); height: var(--nh);
+  position: absolute; left: calc((100% - var(--nw)) * var(--x)); width: var(--nw); min-height: var(--nh);
   background: var(--chip-bg); color: var(--chip-ink); border: none; border-radius: 4px 4px 16px 4px;
   padding: 18px 12px 8px; text-align: left; display: flex; flex-direction: column; gap: 4px;
   transform: rotate(var(--rot)); box-shadow: 0 6px 14px rgba(30, 20, 80, .18);
@@ -182,8 +182,10 @@ textarea::placeholder, input::placeholder { color: var(--muted); opacity: .9; }
 }
 .sticky-text {
   font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; font-weight: 700; font-size: 1.12rem; line-height: 1.15;
-  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow-wrap: anywhere;
+  overflow-wrap: anywhere; white-space: pre-wrap;
 }
+.sticky.long .sticky-text { font-size: 1rem; }
+.sticky.xlong .sticky-text { font-size: .92rem; line-height: 1.12; }
 .sticky-foot { margin-top: auto; font-size: .74rem; opacity: .7; display: flex; justify-content: space-between; }
 .sticky-foot .fav { color: #B7790C; opacity: 1; font-size: .9rem; line-height: 1; }
 .sticky.dim { opacity: .22; }
@@ -946,6 +948,11 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       if (handle) zone.append(handle);
       return zone;
     }));
+    boardEl.querySelectorAll(".field").forEach(f => {
+      let bottom = 0;
+      f.querySelectorAll(".sticky").forEach(s => { bottom = Math.max(bottom, s.offsetTop + s.offsetHeight); });
+      if (bottom + 60 > f.offsetHeight) f.style.minHeight = (bottom + 60) + "px";
+    });
     renderTray();
   }
 
@@ -953,7 +960,7 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
     const p = posOf(n);
     const rot = ((hash(n.id) % 7) - 3) * 0.9;
     const b = el("button", {
-      type: "button", className: "sticky" + (matches(n) ? "" : " dim"), "data-id": n.id,
+      type: "button", className: "sticky" + (n.text.length > 220 ? " xlong" : n.text.length > 110 ? " long" : "") + (matches(n) ? "" : " dim"), "data-id": n.id,
       style: `--x:${p.x};top:${p.y}px;--rot:${rot}deg;--chip-bg:${c.color}`
     },
       el("span", { className: "tape", "aria-hidden": "true" }),
@@ -1038,16 +1045,23 @@ dialog textarea { font-family: "Gaegu", "Comic Neue", "Segoe Print", cursive; fo
       const cols = Math.max(1, Math.floor((fw - gap) / (nw + gap)));
       const gridW = cols * nw + (cols - 1) * gap;
       const startX = Math.max(0, (fw - gridW) / 2);
-      notes.filter(n => catOf(n) === c.id && !n.hidden)
-        .sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.createdAt - b.createdAt)
-        .forEach((n, i) => {
-          const left = startX + (i % cols) * (nw + gap);
+      const items = notes.filter(n => catOf(n) === c.id && !n.hidden)
+        .sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.createdAt - b.createdAt);
+      let rowTop = 18;
+      for (let r = 0; r < items.length; r += cols) {
+        let rowH = nh;
+        items.slice(r, r + cols).forEach((n, j) => {
+          const stuck = field.querySelector(`.sticky[data-id="${n.id}"]`);
+          rowH = Math.max(rowH, stuck ? stuck.offsetHeight : nh);
+          const left = startX + j * (nw + gap);
           changed.push(Object.assign({}, n, {
             x: fw > nw ? clamp(left / (fw - nw), 0, 1) : 0.5,
-            y: 18 + Math.floor(i / cols) * (nh + gap + 6),
-            z: i + 1
+            y: rowTop,
+            z: r + j + 1
           }));
         });
+        rowTop += rowH + gap + 6;
+      }
     });
     notes = notes.map(n => changed.find(c => c.id === n.id) || n);
     render();
